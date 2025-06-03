@@ -1,0 +1,63 @@
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/ai-video-editor/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // File paths
+  originalVideoPath String?
+  originalAudioPath String?
+  processedVideoPath String?
+  processedAudioPath String?
+  finalVideoPath String?
+  
+  // Processing settings
+  voiceChangeType String? // "male-to-kid", "female-to-male", etc.
+  voiceChangeSettings Json?
+  lipsyncSettings Json?
+  
+  // Processing status
+  status String @default("draft") // draft, processing, completed, failed
+  processingProgress Int @default(0)
+  
+  // Export settings
+  exportFormat String @default("mp4")
+  exportQuality String @default("high")
+  
+  // Relations
+  processingJobs ProcessingJob[]
+  
+  @@map("projects")
+}
+
+model ProcessingJob {
+  id        String   @id @default(cuid())
+  projectId String
+  type      String   // "voice-change", "lipsync", "export"
+  status    String   @default("pending") // pending, processing, completed, failed
+  progress  Int      @default(0)
+  result    Json?
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@map("processing_jobs")
+}
